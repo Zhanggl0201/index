@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>资源站 · YunfanTech</title>
+<style>
+  :root{
+    --accent: #5B9CFF;
+    --accent-soft: #7AA2FF;
+    --text-sub: #AEB8CC;
+    --white: #FFFFFF;
+    --font: "Sarasa Gothic SC", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html, body{
+    background:#04060F;
+    font-family:var(--font);
+    color:var(--white);
+    min-height:100vh;
+  }
+  body{ overflow-x:hidden; -webkit-tap-highlight-color:transparent; }
+
+  .page{
+    position:relative;
+    min-height:100vh;
+    padding:104px 24px 72px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+
+  /* Ambient glow blobs (same family as the homepage) */
+  .glow{ position:fixed; border-radius:50%; filter:blur(90px); z-index:0; pointer-events:none; }
+  .glow.a{ width:540px; height:540px; background:radial-gradient(circle, rgba(91,156,255,.18), transparent 70%); top:-180px; right:-140px; }
+  .glow.b{ width:480px; height:480px; background:radial-gradient(circle, rgba(122,162,255,.12), transparent 70%); bottom:-200px; left:-160px; }
+
+  /* Top bar: logo (left) + logout (right) — mirrors the homepage */
+  .logo{ position:absolute; left:52px; top:30px; width:275px; z-index:6; }
+  .logo img{ width:100%; height:auto; display:block; object-fit:contain; object-position:left center; }
+  .logout{
+    position:absolute; right:24px; top:26px; z-index:7;
+    display:flex; align-items:center; gap:6px;
+    height:36px; padding:0 14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.20);
+    color:var(--white); font-size:13px; font-family:var(--font);
+    cursor:pointer; user-select:none;
+    transition:background .25s ease, border-color .25s ease;
+  }
+  .logout:hover{ background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.35); }
+  .logout svg{ width:15px; height:15px; }
+  @media (max-width:768px){
+    .logo{ left:50%; top:24px; width:160px; transform:translateX(-50%); }
+    .logo img{ object-position:center; }
+    .logout{ right:16px; top:20px; height:32px; padding:0 12px; font-size:12px; }
+  }
+
+  /* Heading */
+  .head{ position:relative; z-index:1; text-align:center; margin-bottom:44px; display:flex; flex-direction:column; gap:12px; align-items:center; padding:0 16px; }
+  .head h1{ font-size:clamp(30px, 4vw, 44px); font-weight:700; line-height:1.2; }
+  .head .sub{ font-size:clamp(14px, 1.6vw, 18px); color:var(--text-sub); }
+  .head .hint{ font-size:13px; color:rgba(174,184,204,.7); }
+
+  /* Card wall — auto-flowing grid, centered */
+  .grid{
+    position:relative; z-index:1;
+    width:100%; max-width:1080px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px, 300px));
+    gap:24px; justify-content:center;
+  }
+  .card{
+    min-height:180px; padding:24px;
+    border-radius:18px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.22);
+    -webkit-backdrop-filter:blur(18px);
+    backdrop-filter:blur(18px);
+    box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.18);
+    text-decoration:none; cursor:pointer;
+    transition:transform .25s ease, border-color .25s ease, background .25s ease;
+  }
+  .card:hover{ transform:translateY(-4px); background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.35); }
+  .card:active{ transform:scale(.98); }
+  .card .row{ width:100%; display:flex; align-items:center; justify-content:space-between; }
+  .chip{
+    width:44px; height:44px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(92,156,255,.18);
+    border:1px solid rgba(255,255,255,.15);
+  }
+  .chip svg{ width:26px; height:26px; display:block; }
+  .card .arrow-icon{ font-size:20px; font-weight:700; color:var(--accent-soft); }
+  .card .title{ font-size:20px; font-weight:600; color:var(--white); }
+  .card .desc{ font-size:14px; font-weight:400; color:var(--text-sub); line-height:1.5; }
+  .card .meta{ margin-top:auto; font-size:12px; color:rgba(174,184,204,.65); }
+
+  @media (max-width:768px){
+    .page{ padding:96px 18px 56px; }
+    .head{ margin-bottom:30px; }
+    .card{ min-height:150px; padding:20px 22px; }
+    .card .title{ font-size:19px; }
+    .card .desc{ font-size:13px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="glow a"></div>
+    <div class="glow b"></div>
+
+    <!-- Logo -->
+    <div class="logo"><img src="assets/images/logo.png" alt="Yunfan Tech"></div>
+
+    <!-- Logout -->
+    <div class="logout" id="logoutBtn" aria-label="退出登录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      <span>退出</span>
+    </div>
+
+    <!-- Heading -->
+    <div class="head">
+      <h1>资源站</h1>
+      <p class="sub">YunfanTech · 资源分享与下载</p>
+      <p class="hint">资源托管于 OneDrive，点击卡片跳转预览 / 下载（大文件直连微软 CDN）</p>
+    </div>
+
+    <!-- Card wall -->
+    <!-- 把下面的 href 换成你在 OneDrive 里"复制的分享链接"即可（设为"任何人可查看"） -->
+    <div class="grid">
+
+      <a class="card" href="https://1drv.ms/f/替换为你的OneDrive分享链接" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          </div>
+          <span class="arrow-icon">&#8599;</span>
+        </div>
+        <div class="title">软件工具</div>
+        <div class="desc">常用软件与开发工具合集</div>
+        <div class="meta">OneDrive · 文件夹</div>
+      </a>
+
+      <a class="card" href="https://1drv.ms/f/替换为你的OneDrive分享链接" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+          </div>
+          <span class="arrow-icon">&#8599;</span>
+        </div>
+        <div class="title">设计素材</div>
+        <div class="desc">图片 / 模板 / 设计资源</div>
+        <div class="meta">OneDrive · 文件夹</div>
+      </a>
+
+      <a class="card" href="https://1drv.ms/f/替换为你的OneDrive分享链接" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
+          </div>
+          <span class="arrow-icon">&#8599;</span>
+        </div>
+        <div class="title">学习资料</div>
+        <div class="desc">文档 / 教程 / 笔记归档</div>
+        <div class="meta">OneDrive · 文件夹</div>
+      </a>
+
+      <a class="card" href="https://1drv.ms/f/替换为你的OneDrive分享链接" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z" fill="white" stroke="none"/></svg>
+          </div>
+          <span class="arrow-icon">&#8599;</span>
+        </div>
+        <div class="title">影音资源</div>
+        <div class="desc">视频 / 音频等大文件</div>
+        <div class="meta">OneDrive · 文件夹</div>
+      </a>
+
+    </div>
+  </div>
+
+<script>
+  /* 退出登录：清掉边缘鉴权 Cookie，跳回登录页（访问防护由 EdgeOne middleware.js 负责） */
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try{ await fetch('/api/logout', { method: 'POST' }); }catch(_){}
+    location.href = '/login.html';
+  });
+</script>
+</body>
+</html>
