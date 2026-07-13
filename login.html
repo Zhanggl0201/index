@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>登录 · YunfanTech</title>
+<style>
+  :root{
+    --accent: #5B9CFF;
+    --accent-soft: #7AA2FF;
+    --text-sub: #AEB8CC;
+    --white: #FFFFFF;
+    --font: "Sarasa Gothic SC", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html, body{
+    width:100%; height:100%;
+    background:#04060F;
+    overflow:hidden;
+    font-family:var(--font);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .gate{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:#04060F;
+    padding:24px;
+  }
+  .gate::before{
+    content:""; position:absolute; width:520px; height:520px; border-radius:50%;
+    background:radial-gradient(circle, rgba(91,156,255,.20), transparent 70%);
+    filter:blur(50px); top:-140px; right:-90px; pointer-events:none;
+  }
+  .gate::after{
+    content:""; position:absolute; width:460px; height:460px; border-radius:50%;
+    background:radial-gradient(circle, rgba(122,162,255,.14), transparent 70%);
+    filter:blur(50px); bottom:-150px; left:-110px; pointer-events:none;
+  }
+  .login-card{
+    position:relative; z-index:1;
+    width:min(92vw, 380px);
+    padding:38px 32px 30px;
+    border-radius:24px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    -webkit-backdrop-filter:blur(24px);
+    backdrop-filter:blur(24px);
+    box-shadow:0 24px 70px rgba(0,0,0,.55), inset 0 1px 2px rgba(255,255,255,.16);
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    text-align:center;
+  }
+  .login-card .brand{ width:150px; margin-bottom:4px; }
+  .login-card .brand img{ width:100%; height:auto; display:block; }
+  .login-card h2{ font-size:22px; font-weight:700; color:var(--white); }
+  .login-card .hint{ font-size:13px; color:var(--text-sub); margin-top:-10px; }
+  .field{ width:100%; text-align:left; }
+  .field input{
+    width:100%; height:46px; padding:0 16px;
+    border-radius:12px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.18);
+    color:var(--white); font-size:15px; font-family:var(--font);
+    outline:none; transition:border-color .2s ease, background .2s ease;
+  }
+  .field input::placeholder{ color:rgba(174,184,204,.6); }
+  .field input:focus{ border-color:var(--accent); background:rgba(91,156,255,.08); }
+  .login-btn{
+    width:100%; height:48px; margin-top:2px;
+    border:none; border-radius:12px; cursor:pointer;
+    background:linear-gradient(135deg, #5B9CFF, #7AA2FF);
+    color:#fff; font-size:16px; font-weight:600; letter-spacing:2px; font-family:var(--font);
+    box-shadow:0 8px 24px rgba(91,156,255,.35);
+    transition:transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+  }
+  .login-btn:hover{ box-shadow:0 10px 30px rgba(91,156,255,.5); }
+  .login-btn:active{ transform:scale(.98); }
+  .login-btn:disabled{ opacity:.6; cursor:default; }
+  .login-error{
+    min-height:16px; font-size:13px; color:#ff6b6b; opacity:0;
+    transition:opacity .2s ease;
+  }
+  .login-error.show{ opacity:1; }
+  .login-card.shake{ animation:shake .4s; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%,60%{ transform:translateX(-8px); }
+    40%,80%{ transform:translateX(8px); }
+  }
+</style>
+</head>
+<body>
+  <div class="gate">
+    <form class="login-card" id="loginForm" autocomplete="off">
+      <div class="brand"><img src="assets/images/logo.png" alt="Yunfan Tech"></div>
+      <h2>欢迎回来</h2>
+      <p class="hint">请登录后进入主页</p>
+      <div class="field">
+        <input type="text" id="loginUser" placeholder="用户名" autocomplete="username">
+      </div>
+      <div class="field">
+        <input type="password" id="loginPass" placeholder="密码" autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">进 入</button>
+      <p class="login-error" id="loginError">用户名或密码错误</p>
+    </form>
+  </div>
+
+<script>
+  const form  = document.getElementById('loginForm');
+  const btn   = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  const userEl = document.getElementById('loginUser');
+  const passEl = document.getElementById('loginPass');
+
+  setTimeout(() => userEl.focus(), 100);
+
+  // 登录成功后要跳回的目标地址（middleware 会带上 ?redirect=...）
+  function target(){
+    const p = new URLSearchParams(location.search).get('redirect');
+    // 只允许站内相对路径，避免开放重定向
+    if(p && p.startsWith('/') && !p.startsWith('//')) return p;
+    return '/';
+  }
+
+  function fail(msg){
+    errEl.textContent = msg || '用户名或密码错误';
+    errEl.classList.add('show');
+    form.classList.add('shake');
+    passEl.value = '';
+    setTimeout(() => form.classList.remove('shake'), 420);
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    errEl.classList.remove('show');
+    btn.disabled = true;
+    const oldTxt = btn.textContent;
+    btn.textContent = '验证中…';
+    try{
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ user: userEl.value.trim(), pass: passEl.value })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(res.ok && data.ok){
+        location.href = target();   // 凭证已写入 HttpOnly Cookie，中间件会放行
+        return;
+      }
+      fail(data.msg);
+    }catch(_){
+      fail('网络错误，请重试');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = oldTxt;
+    }
+  });
+</script>
+</body>
+</html>

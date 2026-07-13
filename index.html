@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>YunfanTech · Sherry</title>
+<style>
+  :root{
+    --bg-deep: rgba(5, 8, 23, 1);
+    --accent: #5B9CFF;
+    --accent-soft: #7AA2FF;
+    --text-sub: #AEB8CC;
+    --white: #FFFFFF;
+    --font: "Sarasa Gothic SC", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html, body{
+    width:100%; height:100%;
+    background:#04060F;
+    overflow:hidden;
+    font-family:var(--font);
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+  }
+
+  /* ===== Full-viewport fluid hero (no letterbox / black borders) ===== */
+  .hero{
+    position:relative;
+    width:100%;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+    background:#060A18;
+  }
+
+  /* ===== Carousel background (crossfade) ===== */
+  .carousel{ position:absolute; inset:0; z-index:1; overflow:hidden; }
+  .slide{
+    position:absolute; inset:0;
+    background-size:cover;
+    background-position:center;
+    opacity:0;
+    transition:opacity .8s ease;
+  }
+  .slide.active{ opacity:1; }
+
+  /* Top scrim to hold the logo (dark→transparent) */
+  .scrim-top{
+    position:absolute; top:0; left:0; right:0; height:160px; z-index:2;
+    background:linear-gradient(to bottom, rgba(5,8,23,.6), rgba(5,8,23,0));
+  }
+
+  /* Dark gradient overlay: lighter top → darker bottom for legibility */
+  .overlay-dark{
+    position:absolute; inset:0; z-index:3;
+    background:linear-gradient(to bottom,
+        rgba(5,8,23,.15) 0%,
+        rgba(5,8,23,.55) 50%,
+        rgba(3,5,15,.92) 100%);
+  }
+
+  /* ===== Logo (top-left on desktop) ===== */
+  .logo{
+    position:absolute; left:52px; top:30px; width:275px; z-index:4;
+    transition:width .25s ease;
+  }
+  .logo img{ width:100%; height:auto; display:block; object-fit:contain; object-position:left center; }
+
+  /* ===== Side arrows (desktop) ===== */
+  .arrow{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; z-index:6;
+    border-radius:22px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.20);
+    color:var(--white);
+    font-size:26px; font-weight:700; line-height:1;
+    cursor:pointer; user-select:none;
+    transition:background .25s ease, border-color .25s ease;
+  }
+  .arrow:hover{ background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.35); }
+  .arrow.prev{ left:40px; }
+  .arrow.next{ right:40px; }
+
+  /* ===== Content column (fluid centered) ===== */
+  .content{
+    position:absolute; inset:0; z-index:5;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:44px; padding:0 32px; text-align:center;
+    pointer-events:none;               /* let clicks pass through empty areas to arrows below */
+  }
+  /* Re-enable interaction only on the real interactive elements */
+  .content .boxes,
+  .content .box,
+  .content .dots,
+  .content .dot{ pointer-events:auto; }
+
+  /* Hero title */
+  .hero-title{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .hero-title h1{ font-size:clamp(34px, 4.2vw, 52px); font-weight:700; color:var(--white); line-height:1.21; }
+  .hero-title .subtitle{ font-size:clamp(15px, 1.6vw, 20px); font-weight:400; color:var(--text-sub); }
+
+  /* Three boxes row (wraps on narrow screens) */
+  .boxes{ display:flex; gap:28px; align-items:stretch; justify-content:center; flex-wrap:wrap; max-width:100%; }
+
+  .box{
+    width:360px; max-width:90vw; height:210px;
+    padding:26px;
+    border-radius:18px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.22);
+    -webkit-backdrop-filter:blur(18px);
+    backdrop-filter:blur(18px);
+    box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.18);
+    cursor:pointer;
+    text-decoration:none;
+    transition:transform .25s ease, border-color .25s ease, background .25s ease;
+  }
+  .box:hover{
+    transform:translateY(-4px);
+    background:rgba(255,255,255,.16);
+    border-color:rgba(255,255,255,.35);
+  }
+  .box:active{ transform:scale(.98); }
+
+  .box .row{ width:100%; display:flex; align-items:center; justify-content:space-between; }
+  .chip{
+    width:44px; height:44px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(92,156,255,.18);
+    border:1px solid rgba(255,255,255,.15);
+  }
+  .chip svg{ width:26px; height:26px; display:block; }
+  .box .arrow-icon{ font-size:20px; font-weight:700; color:var(--accent-soft); }
+
+  .box .title{ font-size:20px; font-weight:600; color:var(--white); }
+  .box .desc{ font-size:14px; font-weight:400; color:var(--text-sub); }
+
+  /* ===== Carousel dots ===== */
+  .dots{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; max-width:90vw; }
+  .dot{ width:8px; height:8px; border-radius:4px; background:rgba(255,255,255,.35); cursor:pointer; transition:width .3s ease, background .3s ease; }
+  .dot.active{ width:28px; height:8px; border-radius:4px; background:var(--accent); }
+
+  /* ===== Tablet ===== */
+  @media (max-width:1024px){
+    .content{ gap:36px; }
+    .box{ width:320px; }
+  }
+
+  /* ===== Mobile: auto-switch to portrait single-column layout ===== */
+  @media (max-width:768px){
+    .scrim-top{ height:120px; background:linear-gradient(to bottom, rgba(5,8,23,.65), rgba(5,8,23,0)); }
+    .overlay-dark{
+      background:linear-gradient(to bottom,
+        rgba(5,8,23,.10) 0%,
+        rgba(5,8,23,.50) 45%,
+        rgba(3,5,15,.95) 100%);
+    }
+    /* Logo centered on top */
+    .logo{ left:50%; top:26px; width:170px; transform:translateX(-50%); }
+    .logo img{ object-position:center; }
+    /* Hide side arrows — swipe is primary nav */
+    .arrow{ display:none; }
+    .content{ gap:26px; padding:96px 22px 56px; justify-content:center; }
+    .hero-title{ gap:10px; }
+    .hero-title h1{ font-size:clamp(26px, 7.5vw, 34px); line-height:1.25; }
+    .hero-title .subtitle{ font-size:clamp(13px, 3.6vw, 16px); }
+    /* Single-column full-width boxes */
+    .boxes{ flex-direction:column; gap:16px; width:100%; align-items:center; }
+    .box{ width:min(92vw, 380px); height:auto; min-height:140px; padding:22px 24px; gap:8px; box-shadow:0 8px 24px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.18); }
+    .box:hover{ transform:none; }
+    .box .title{ font-size:19px; }
+    .box .desc{ font-size:13px; }
+    .dots{ gap:10px; margin-top:4px; }
+    .dot{ width:7px; height:7px; }
+    .dot.active{ width:24px; height:7px; }
+  }
+  @media (max-width:768px) and (min-height:780px){
+    .content{ gap:30px; }
+    .box{ padding:24px 26px; }
+  }
+  @media (max-width:420px){
+    .logo{ width:150px; }
+  }
+
+  /* ===== Logout button (top-right) ===== */
+  .logout{
+    position:absolute; right:24px; top:26px; z-index:7;
+    display:flex; align-items:center; gap:6px;
+    height:36px; padding:0 14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.20);
+    color:var(--white); font-size:13px; font-family:var(--font);
+    cursor:pointer; user-select:none;
+    transition:background .25s ease, border-color .25s ease;
+  }
+  .logout:hover{ background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.35); }
+  .logout svg{ width:15px; height:15px; }
+  @media (max-width:768px){
+    .logout{ right:16px; top:20px; height:32px; padding:0 12px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <!-- Carousel background: local 1.jpg first, then online 5-22 -->
+    <div class="carousel" id="carousel">
+      <div class="slide active" style="background-image:url('assets/images/1.jpg')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/5.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/6.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/7.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/8.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/9.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/10.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/11.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/12.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/13.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/14.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/15.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/16.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/17.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/18.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/19.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/20.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/21.webp')"></div>
+      <div class="slide" style="background-image:url('https://cdn.jsdmirror.cn/gh/Zhanggl0201/blog-images@main/desktop-banner/22.webp')"></div>
+    </div>
+
+    <!-- Top scrim + dark overlay -->
+    <div class="scrim-top"></div>
+    <div class="overlay-dark"></div>
+
+    <!-- Logo -->
+    <div class="logo"><img src="assets/images/logo.png" alt="Yunfan Tech"></div>
+
+    <!-- Logout -->
+    <div class="logout" id="logoutBtn" aria-label="退出登录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      <span>退出</span>
+    </div>
+
+    <!-- Side arrows (auto-hidden on mobile) -->
+    <div class="arrow prev" id="prevBtn" aria-label="上一张">&#8249;</div>
+    <div class="arrow next" id="nextBtn" aria-label="下一张">&#8250;</div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="hero-title">
+        <h1>金字招牌</h1>
+        <p class="subtitle"></p>
+      </div>
+
+      <div class="boxes">
+        <a class="box" href="#blog">
+          <div class="row">
+            <div class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/></svg>
+            </div>
+            <span class="arrow-icon">&#8594;</span>
+          </div>
+          <div class="title">Blog</div>
+          <div class="desc">分享代码 分享日常</div>
+        </a>
+
+        <a class="box" href="#repo">
+          <div class="row">
+            <div class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13 5l-2 14"/></svg>
+            </div>
+            <span class="arrow-icon">&#8594;</span>
+          </div>
+          <div class="title">GitHub</div>
+          <div class="desc">GitHub 上的项目与代码</div>
+        </a>
+
+        <a class="box" href="#video">
+          <div class="row">
+            <div class="chip">
+              <svg viewBox="0 0 24 24" fill="white"><path d="M7 5l12 7-12 7z"/></svg>
+            </div>
+            <span class="arrow-icon">&#8594;</span>
+          </div>
+          <div class="title">RADARKIOSK</div>
+          <div class="desc">雷达科普交互系统</div>
+        </a>
+      </div>
+
+      <!-- Dots generated dynamically to match slide count -->
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+
+<script>
+  /* ===== Logout (访问防护由 EdgeOne 边缘中间件 middleware.js 负责，此处仅清凭证) ===== */
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try{ await fetch('/api/logout', { method: 'POST' }); }catch(_){}
+    location.href = '/login.html';
+  });
+
+  /* ===== Carousel core ===== */
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsWrap = document.getElementById('dots');
+  let current = 0, timer = null;
+
+  // Build dots to match slide count
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.dataset.i = i;
+    d.addEventListener('click', () => { show(i); restartAuto(); });
+    dotsWrap.appendChild(d);
+  });
+  const dots = Array.from(dotsWrap.children);
+
+  function show(i){
+    current = (i + slides.length) % slides.length;
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === current));
+    dots.forEach((d, idx) => d.classList.toggle('active', idx === current));
+  }
+  const next = () => show(current + 1);
+  const prev = () => show(current - 1);
+  function startAuto(){ stopAuto(); timer = setInterval(next, 5000); }
+  function stopAuto(){ if(timer){ clearInterval(timer); timer = null; } }
+  function restartAuto(){ startAuto(); }
+
+  /* ===== Device detection: switch behavior between desktop & mobile ===== */
+  const mq = window.matchMedia('(max-width:768px)');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const hero = document.querySelector('.hero');
+
+  // Desktop-only handlers (kept as named fns so we can add/remove)
+  const onPrev = () => { prev(); restartAuto(); };
+  const onNext = () => { next(); restartAuto(); };
+  const onKey  = e => {
+    if(e.key === 'ArrowRight'){ next(); restartAuto(); }
+    if(e.key === 'ArrowLeft'){ prev(); restartAuto(); }
+  };
+  const onEnter = () => stopAuto();
+  const onLeave = () => startAuto();
+
+  function bindDesktop(){
+    prevBtn.addEventListener('click', onPrev);
+    nextBtn.addEventListener('click', onNext);
+    window.addEventListener('keydown', onKey);
+    hero.addEventListener('mouseenter', onEnter);
+    hero.addEventListener('mouseleave', onLeave);
+  }
+  function unbindDesktop(){
+    prevBtn.removeEventListener('click', onPrev);
+    nextBtn.removeEventListener('click', onNext);
+    window.removeEventListener('keydown', onKey);
+    hero.removeEventListener('mouseenter', onEnter);
+    hero.removeEventListener('mouseleave', onLeave);
+  }
+
+  function applyMode(isMobile){
+    unbindDesktop();
+    if(!isMobile) bindDesktop();     // desktop: arrows + keyboard + hover-pause
+    startAuto();                     // restart clean timer for the active mode
+  }
+  applyMode(mq.matches);
+  // Re-evaluate when crossing the breakpoint (resize / rotate / DevTools toggle)
+  mq.addEventListener('change', e => applyMode(e.matches));
+
+  /* ===== Touch swipe: available on both, primary nav on mobile ===== */
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', e => {
+    if(touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if(Math.abs(dx) > 40){ dx < 0 ? next() : prev(); restartAuto(); }
+    touchX = null;
+  }, {passive:true});
+
+  /* ===== Pause autoplay when tab hidden (saves battery, both modes) ===== */
+  document.addEventListener('visibilitychange', () => {
+    document.hidden ? stopAuto() : startAuto();
+  });
+</script>
+</body>
+</html>
