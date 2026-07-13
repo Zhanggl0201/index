@@ -3,12 +3,8 @@
 //  账号密码在边缘节点校验，前端拿不到；凭证写入 HttpOnly Cookie，JS 无法窃取。
 // ============================================================================
 
-// ---- 默认账号密码 / 密钥；线上请在 EdgeOne 控制台「环境变量」里覆盖 ----
-const DEFAULTS = {
-  AUTH_USER: 'admin',
-  AUTH_PASS: 'yunfan2026',
-  AUTH_SECRET: 'change-me-please-a-long-random-string',
-};
+// ---- 登录凭证必须由 EdgeOne 控制台「环境变量」提供；未配置则拒绝登录（fail-closed）----
+// 代码中不保留任何默认账号 / 密码 / 密钥，即使仓库公开也无可用凭证。
 
 const COOKIE_NAME = 'yf_sess';
 const MAX_AGE = 60 * 60 * 8; // 凭证有效期：8 小时（秒）
@@ -62,9 +58,14 @@ function json(body, status) {
 
 async function handleLogin(context) {
   const { request, env } = context;
-  const USER = (env && env.AUTH_USER) || DEFAULTS.AUTH_USER;
-  const PASS = (env && env.AUTH_PASS) || DEFAULTS.AUTH_PASS;
-  const SECRET = (env && env.AUTH_SECRET) || DEFAULTS.AUTH_SECRET;
+  const USER = env && env.AUTH_USER;
+  const PASS = env && env.AUTH_PASS;
+  const SECRET = env && env.AUTH_SECRET;
+
+  // fail-closed：环境变量缺任意一项，直接拒绝，绝不使用任何写死的默认账密
+  if (!USER || !PASS || !SECRET) {
+    return json({ ok: false, msg: '服务端未配置登录凭证，请在 EdgeOne 控制台设置 AUTH_USER / AUTH_PASS / AUTH_SECRET' }, 500);
+  }
 
   let data = {};
   try {

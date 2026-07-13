@@ -4,10 +4,8 @@
 //  未持有合法登录凭证的访客，连页面 HTML 都拿不到。
 // ============================================================================
 
-// ---- 可通过 EdgeOne 控制台「环境变量」覆盖（强烈建议线上覆盖 AUTH_SECRET）----
-const DEFAULTS = {
-  AUTH_SECRET: 'change-me-please-a-long-random-string', // 签名密钥：务必在控制台改成一长串随机字符
-};
+// ---- 签名密钥必须由 EdgeOne 控制台「环境变量」AUTH_SECRET 提供；未配置则整站拒绝访问（fail-closed）----
+// 代码中不保留任何默认密钥，即使仓库公开也无法伪造凭证。
 
 // 无需登录即可访问的白名单（登录页本身、登录接口、登录页要用到的资源）
 const PUBLIC_PATHS = new Set([
@@ -113,10 +111,29 @@ export async function middleware(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const pathname = url.pathname;
-  const secret = (env && env.AUTH_SECRET) || DEFAULTS.AUTH_SECRET;
+  const secret = env && env.AUTH_SECRET;
 
   // 1) 白名单直接放行
   if (isPublic(pathname)) return context.next();
+
+  // fail-closed：未配置签名密钥时，一律不放行（宁可整站不可用，也不使用可被利用的默认密钥）
+  if (!secret) {
+    const accept = request.headers.get('Accept') || '';
+    if (accept.includes('text/html')) {
+      const html = '<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
+        + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<title>站点未配置</title>'
+        + '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;'
+        + 'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;background:#04060F;color:#AEB8CC">'
+        + '<div style="text-align:center;max-width:520px;padding:24px">'
+        + '<h2 style="color:#5B9CFF;margin:0 0 12px">站点尚未配置访问凭证</h2>'
+        + '<p style="line-height:1.7">请在 EdgeOne 控制台的「环境变量」中设置 '
+        + '<code style="color:#7AA2FF">AUTH_USER</code> / <code style="color:#7AA2FF">AUTH_PASS</code> / '
+        + '<code style="color:#7AA2FF">AUTH_SECRET</code> 后重新部署。</p></div></body></html>';
+      return new Response(html, { status: 503, headers: { 'content-type': 'text/html; charset=UTF-8' } });
+    }
+    return new Response('Service Unavailable: auth not configured', { status: 503 });
+  }
 
   // 2) 校验登录凭证
   const token = getCookie(request, COOKIE_NAME);
