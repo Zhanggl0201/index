@@ -11,6 +11,7 @@
 const PUBLIC_PATHS = new Set([
   '/login.html',
   '/api/login',
+  '/api/onedrive-auth',   // OneDrive OAuth 回调：授权时尚未登录，必须放行
   '/favicon.ico',
 ]);
 // 登录页依赖的静态资源前缀（logo 等），放行以便登录页能正常显示
